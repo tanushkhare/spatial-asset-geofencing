@@ -1,11 +1,11 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.routers import spatial_router
+from backend.app.routers.gis import router as gis_router
 import uvicorn
 
 app = FastAPI(
-    title="Spatial Asset Tracking & Geofencing Engine API",
-    description="High-throughput GPS telemetry ingestion and Point-in-Polygon spatial boundary engine.",
+    title="Spatial GIS Geo-Analytics Engine API",
+    description="Geospatial polygon indexing, spatial bounding queries, and fleet asset clustering.",
     version="1.0.0"
 )
 
@@ -17,11 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(spatial_router.router)
+app.include_router(gis_router)
 
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "spatial-asset-geofencing", "spatial_index": "Shapely R-Tree / PostGIS"}
+async def health():
+    return {"status": "healthy", "service": "spatial-gis-engine"}
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

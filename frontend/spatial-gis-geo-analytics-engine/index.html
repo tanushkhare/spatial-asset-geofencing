@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spatial GIS Geo-Analytics Engine</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">⚡ Spatial GIS Geo-Analytics Engine</div>
+      <div class="badge">Live Microservice Active</div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <!-- Left Column: Geospatial Controls -->
+    <section class="panel-left">
+      <h2>Data Ingestion & Controls</h2>
+      <p class="subtitle">Geospatial query radius filters, polygon spatial indexing, coordinate clustering, and real-time geographic telemetry.</p>
+
+      <div class="input-group">
+        <label for="batchInput">Asset Batch Ingestion Volume</label>
+        <select id="batchInput" class="text-input">
+          <option value="500">500 Records / Frame</option>
+          <option value="2500" selected>2,500 Records / Frame</option>
+          <option value="10000">10,000 Records / Frame</option>
+        </select>
+      </div>
+
+      <button class="btn primary-btn" onclick="executeProcess()">Execute Microservice Pipeline</button>
+
+      <div class="log-card">
+        <h4>Microservice Telemetry</h4>
+        <div id="logBox" class="terminal-log">System standing by for query ingestion...</div>
+      </div>
+    </section>
+
+    <!-- Right Column: GIS Telemetry -->
+    <aside class="panel-right">
+      <h2>Pipeline Diagnostics</h2>
+
+      <div class="metric-row">
+        <div class="metric-card">
+          <span class="label">Spatial Coverage</span>
+          <span class="value" id="val1">--</span>
+        </div>
+        <div class="metric-card">
+          <span class="label">Grid State</span>
+          <span class="value" id="val2" style="color:#34d399; font-size:1.1rem; padding-top:0.35rem;">--</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Analysis & Synthesis</h3>
+        <ul id="resList">
+          <li>Awaiting pipeline trigger execution...</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    async function executeProcess() {
+      const batch = parseInt(document.getElementById('batchInput').value, 10);
+      const log = document.getElementById('logBox');
+
+      log.innerText = `[${new Date().toLocaleTimeString()}] Pipeline triggered.\n[${new Date().toLocaleTimeString()}] Indexing spatial coordinates across R-tree buffer...\n[${new Date().toLocaleTimeString()}] Querying endpoint: /api/v1/gis/query...`;
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/v1/gis/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batch_size: batch, center_latitude: 37.7749, center_longitude: -122.4194, radius_km: 15.0 })
+        });
+
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+
+        const data = await res.json();
+
+        document.getElementById('val1').innerText = `${data.spatial_coverage_sq_km} km²`;
+        document.getElementById('val2').innerText = data.cluster_density_index;
+        document.getElementById('val2').style.color = "#34d399";
+
+        let analysisHtml = `
+          <li>Total Tracked Geofenced Assets: <code>${data.total_assets_indexed.toLocaleString()}</code></li>
+          <li>Spatial Query Latency: <code>${data.query_latency_ms} ms</code></li>
+        `;
+
+        data.clusters.forEach(c => {
+          const color = c.density_status === 'HIGH CONGESTION' ? '#f87171' : (c.density_status === 'MODERATE' ? '#facc15' : '#34d399');
+          analysisHtml += `<li><strong>[${c.cluster_id}]</strong> ${c.geofence_zone} — <code>${c.active_assets_count} assets</code> (${c.avg_speed_kmh} km/h) <span style="color:${color}; font-weight:600;">[${c.density_status}]</span></li>`;
+        });
+
+        document.getElementById('resList').innerHTML = analysisHtml;
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] 200 OK: Execution complete. Geofence clusters updated.`;
+
+      } catch (err) {
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] Note: Backend offline (${err.message}).`;
+      }
+    }
+  </script>
+</body>
+</html>
