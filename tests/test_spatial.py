@@ -9,19 +9,19 @@ def test_health():
     assert res.status_code == 200
     assert res.json()["status"] == "healthy"
 
-def test_geofence_containment_breach():
-    # Inside the default SF terminal polygon
-    payload = {"asset_id": "TEST_VEHICLE_1", "longitude": -122.4100, "latitude": 37.7900, "speed_kmh": 30.0}
-    res = client.post("/api/v1/spatial/telemetry", json=payload)
+def test_point_inside_geofence():
+    # Inside the default SF Logistics Hub (-122.41, 37.79)
+    payload = {"asset_id": "TEST_ASSET_IN", "longitude": -122.4100, "latitude": 37.7900}
+    res = client.post("/api/v1/spatial/evaluate", json=payload)
     assert res.status_code == 200
     data = res.json()
     assert data["inside_geofence"] is True
-    assert len(data["active_zones"]) > 0
+    assert "San Francisco Logistics Port" in data["active_zones"]
 
-def test_geofence_outside_boundary():
-    # Far outside SF zone
-    payload = {"asset_id": "TEST_VEHICLE_2", "longitude": -121.0000, "latitude": 36.0000, "speed_kmh": 65.0}
-    res = client.post("/api/v1/spatial/telemetry", json=payload)
+def test_point_outside_geofence():
+    # Outside the hub (e.g. New York coordinates)
+    payload = {"asset_id": "TEST_ASSET_OUT", "longitude": -74.0060, "latitude": 40.7128}
+    res = client.post("/api/v1/spatial/evaluate", json=payload)
     assert res.status_code == 200
     data = res.json()
     assert data["inside_geofence"] is False
